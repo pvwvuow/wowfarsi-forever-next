@@ -70,12 +70,59 @@ SlashCmdList["WOFN"] = function(msg)
         N.Say(countsLine())
     elseif cmd == "toggle" then
         if arg ~= "" then toggleModule(arg) else N.Say("استفاده: /wofn toggle spells|items|npcs|quests|reputations|professions") end
+    elseif cmd == "add" then
+        -- /wofn add spells "Fireball" "گوی آتش"
+        local kind, rest = arg:match("^(%S+)%s+(.+)$")
+        if not kind then
+            N.Say('استفاده: /wofn add <نوع> "انگلیسی" "فارسی"')
+            N.Say("نوع‌ها: spells items npcs quests ui stats classes")
+        else
+            local en, fa = rest:match('^%s*"([^"]+)"%s+"([^"]+)"%s*$')
+            if not en then
+                en, fa = rest:match("^%s*(%S+)%s+(.+)%s*$")
+            end
+            if not en or not fa then
+                N.Say("قالب درست: /wofn add spells \"Fireball\" \"گوی آتش\"")
+            else
+                local ok, err = N.Custom.Add(kind, en, fa)
+                if ok then
+                    N.Say(("%s: %s = %s"):format(ok == "added" and "اضافه شد" or "به‌روزرسانی شد", en, fa))
+                else
+                    N.Say("خطا: " .. tostring(err))
+                end
+            end
+        end
+    elseif cmd == "remove" then
+        local kind, en = arg:match("^(%S+)%s+(.+)$")
+        if kind and N.Custom.Remove(kind, en) then
+            N.Say(("حذف شد: %s / %s"):format(kind, en))
+        else
+            N.Say("چنین ترجمهٔ سفارشی‌ای نبود. فهرست: /wofn custom <نوع>")
+        end
+    elseif cmd == "custom" then
+        local kind = arg ~= "" and arg or "quests"
+        local list = N.Custom.List(kind)
+        local counts = N.Custom.Counts()
+        if not next(counts) then
+            N.Say("هیچ ترجمهٔ سفارشی نداری. با /wofn add اضافه کن.")
+        elseif #list == 0 then
+            N.Say(("ترجمهٔ سفارشی نوع %s نداری (%d سفارشی در کل)."):format(kind, (function() local n=0 for _,c in pairs(counts) do n=n+c end return n end)()))
+        else
+            for _, line in ipairs(list) do N.Say(line) end
+        end
+    elseif cmd == "export" then
+        N.Say("ترجمه‌های سفارشی (کپی کن جایی نگه دار):")
+        N.Say(N.Custom.Export())
     elseif cmd == "help" or cmd == "" then
         N.Say("/wofn panel — پنل تنظیمات")
         N.Say("/wofn mode 1|2|3 — حالت نمایش متن فارسی")
         N.Say("/wofn size <8..22> — اندازهٔ فونت")
         N.Say("/wofn modules — وضعیت ماژول‌ها و تعداد ترجمه‌ها")
         N.Say("/wofn toggle <ماژول> — روشن/خاموش کردن یک ماژول")
+        N.Say('/wofn add <نوع> "انگلیسی" "فارسی" — ترجمهٔ سفارشی')
+        N.Say("/wofn custom <نوع> — فهرست ترجمه‌های سفارشی")
+        N.Say("/wofn remove <نوع> <انگلیسی> — حذف ترجمهٔ سفارشی")
+        N.Say("/wofn export — خروجی ترجمه‌های سفارشی")
         N.Say("/wofn debug — نمایش خطاها")
     else
         N.Say("دستور ناشناخته. برای راهنما: /wofn help")

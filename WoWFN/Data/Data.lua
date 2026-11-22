@@ -232,6 +232,10 @@ end
 -- Global lookup helper used by all modules: kind + english string -> fa.
 function N.Lookup(kind, en)
     if type(en) ~= "string" or en == "" then return nil end
+    -- custom translations (SavedVariables) take priority
+    if N.db and N.db.custom and N.db.custom[kind] and N.db.custom[kind][en] then
+        return N.db.custom[kind][en]
+    end
     local fa = D[kind] and D[kind][en]
     return fa
 end

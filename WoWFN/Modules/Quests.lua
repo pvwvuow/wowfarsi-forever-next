@@ -1,5 +1,9 @@
--- WoWFN — Quests: Persian titles and objectives in quest tooltips,
--- quest log and NPC quest dialogs (Classic + modern API).
+-- WoWFN — Quests: full Persian coverage of the quest UI.
+--
+-- Covers: quest giver dialogs (title, description, progress, completion),
+-- quest log buttons + tooltips, quest tooltips (map/tracker), and the
+-- objective text block. Titles come from the quests table; objectives
+-- from the ui table; anything missing falls back gracefully.
 
 local N = WoWFN
 local M = { id = "quests", label = "مأموریت‌ها", active = true }
@@ -40,6 +44,37 @@ local function addQuestTooltip(tooltip)
     if fa then N.Tooltip.Add(tooltip, fa) end
 end
 
+-- Rewrite a static text control with its Persian translation appended
+-- (kept small: long descriptions are appended in muted color).
+local function annotate(frame, textCtrl, kind)
+    if not textCtrl or not textCtrl.GetText then return end
+    local ok, txt = pcall(textCtrl.GetText, textCtrl)
+    if not ok or not txt or txt == "" then return end
+    local fa = N.Lookup(kind, txt)
+    if not fa then return end
+    local T = N.T
+    local shown = T.Process(fa)
+    if kind == "quests" then
+        textCtrl:SetText(txt .. "\n|cffb8d8ff" .. shown .. "|r")
+    else
+        textCtrl:SetText(txt .. "\n|cffb8d8ff" .. shown .. "|r")
+    end
+end
+
+local function hookQuestDialog()
+    if QuestFrameDescriptionText then annotate(nil, QuestFrameDescriptionText, "quests") end
+    if QuestFrameProgressText then annotate(nil, QuestFrameProgressText, "quests") end
+    if QuestFrameRewardQuestText then annotate(nil, QuestFrameRewardQuestText, "quests") end
+    -- header title
+    if QuestFrameTitleText and QuestFrameTitleText.GetText then
+        local ok, title = pcall(QuestFrameTitleText.GetText, QuestFrameTitleText)
+        local fa = ok and title and N.Lookup("quests", title)
+        if fa then
+            QuestFrameTitleText:SetText(title .. "  |cffb8d8ff" .. N.T.Process(fa) .. "|r")
+        end
+    end
+end
+
 local function hookQuestLogButtons()
     local sf = QuestScrollFrame
     if not sf and QuestLogEx then sf = QuestLogEx.ScrollFrame end
@@ -59,28 +94,38 @@ local function hookQuestLogButtons()
                 end
             end)
             btn:HookScript("OnLeave", function() GameTooltip:Hide() end)
+            -- Persian title under the English row title
+            if btn.title and btn.title.GetText then
+                local ok, title = pcall(btn.title.GetText, btn.title)
+                local fa = ok and title and N.Lookup("quests", title)
+                if fa and btn.title.SetFormattedText == nil or fa then
+                    btn.title:SetText(title .. " |cffb8d8ff" .. N.T.Process(fa) .. "|r")
+                end
+            end
         end
     end
 end
 
-function M.Setup()
-    -- quest giver dialog: show the Persian title beside the English one
-    if QuestFrame then
-        QuestFrame:HookScript("OnShow", function()
-            local ok, title = pcall(function() return GetTitleText() end)
-            if not ok or not title then return end
-            local fa = N.Lookup("quests", title)
-            if fa and QuestFrameTitleText and QuestFrameTitleText.SetText then
-                QuestFrameTitleText:SetText(title .. "  |cffb8d8ff" .. N.T.Process(fa) .. "|r")
-            end
-        end)
+-- Re-annotate quest rows after the log refreshes (quests get collapsed,
+-- sorted... which resets the texts).
+local function hookRefresh()
+    local frame = QuestScrollFrame or QuestLogEx or QuestLogFrame
+    if frame and frame.HookScript then
+        frame:HookScript("OnShow", hookQuestLogButtons)
     end
+    if QuestLog_Update or QuestLogUpdate then
+        local updater = QuestLog_Update or QuestLogUpdate
+        local ok = pcall(hooksecurefunc, "QuestLog_Update", hookQuestLogButtons)
+    end
+end
 
-    -- objective tracker rows: GossipFrame / QuestFrame progress text
-    if GossipFrame then
-        GossipFrame:HookScript("OnShow", function()
-            if GossipFrameGreetingPanel and QuestGetText then return end
-        end)
+function M.Setup()
+    -- quest giver dialog: every open re-annotates current quest text
+    if QuestFrame then
+        QuestFrame:HookScript("OnShow", hookQuestDialog)
+    end
+    if QuestFrameAcceptButton then
+        QuestFrameAcceptButton:HookScript("OnShow", hookQuestDialog)
     end
 
     -- quest tooltips (world map, objective tracker)
@@ -91,10 +136,6 @@ function M.Setup()
         end
     end
 
-    -- quest log listing (hook now and whenever the frame shows)
     hookQuestLogButtons()
-    local frame = QuestScrollFrame or QuestLogEx or QuestLogFrame
-    if frame and frame.HookScript then
-        frame:HookScript("OnShow", hookQuestLogButtons)
-    end
+    hookRefresh()
 end

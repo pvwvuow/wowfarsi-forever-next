@@ -2,7 +2,7 @@
 ## Title: WoWFN |cff19aeffفارسی‌ساز Forever|r
 ## Notes: Persian translation for WoW Forever — spells, items, quests, NPCs and UI. wowfarsi.ir
 ## Author: WoWFarsi
-## Version: 0.3.0
+## Version: 0.4.0
 ## AllowLoadGameType: forever
 ## SavedVariables: WoWFNDB
 ## IconTexture: Interface\AddOns\WoWFN\Media\icon
@@ -11,6 +11,7 @@
 
 Core.lua
 Config.lua
+Custom.lua
 Text.lua
 Tooltip.lua
 Data\Data.lua

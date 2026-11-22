@@ -152,6 +152,12 @@ boot:SetScript("OnEvent", function(_, event, name)
         end
     end
 
+    -- user custom translations override everything
+    if N.Custom and N.Custom.Apply then
+        local n = N.Custom.Apply()
+        if n > 0 then N.Say(("%d ترجمهٔ سفارشی شما اعمال شد."):format(n)) end
+    end
+
     local ready = 0
     for _, m in pairs(N.Modules) do if m.ready then ready = ready + 1 end end
     N.Say(("نسخه %s بارگذاری شد — %d ماژول فعال. دستور: /wofn"):format(N.VERSION, ready))
