@@ -45,4 +45,18 @@ check("wrap-lines", #lines >= 3)
 check("empty", T.Process("") == "")
 check("nil-safe", T.Process(nil) == nil)
 
+-- data sanity: all Persian values non-empty and look Persian
+dofile("WoWFN/Data/Data.lua")
+for kind, tbl in pairs(N.Data) do
+    if type(tbl) == "table" then
+        local bad = 0
+        for en, fa in pairs(tbl) do
+            if type(en) ~= "string" or type(fa) ~= "string" or fa == "" then
+                bad = bad + 1
+            end
+        end
+        check("data-" .. kind .. "-clean", bad == 0)
+    end
+end
+
 if fails == 0 then print("ALL TESTS PASS") else os.exit(1) end

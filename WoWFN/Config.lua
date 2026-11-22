@@ -31,6 +31,10 @@ local function countsLine()
     for _, k in ipairs(order) do
         if c[k] then parts[#parts + 1] = ("%s: %d"):format(k, c[k]) end
     end
+    local reps = N.Modules.reputations and N.Modules.reputations.FACTIONS
+    local profs = N.Modules.professions and N.Modules.professions.PROFESSIONS
+    if reps then parts[#parts + 1] = ("factions: %d"):format((function() local n=0 for _ in pairs(reps) do n=n+1 end return n end)()) end
+    if profs then parts[#parts + 1] = ("professions: %d"):format((function() local n=0 for _ in pairs(profs) do n=n+1 end return n end)()) end
     return table.concat(parts, " | ")
 end
 
@@ -65,7 +69,7 @@ SlashCmdList["WOFN"] = function(msg)
         end
         N.Say(countsLine())
     elseif cmd == "toggle" then
-        if arg ~= "" then toggleModule(arg) else N.Say("استفاده: /wofn toggle spells|items|npcs|quests") end
+        if arg ~= "" then toggleModule(arg) else N.Say("استفاده: /wofn toggle spells|items|npcs|quests|reputations|professions") end
     elseif cmd == "help" or cmd == "" then
         N.Say("/wofn panel — پنل تنظیمات")
         N.Say("/wofn mode 1|2|3 — حالت نمایش متن فارسی")
