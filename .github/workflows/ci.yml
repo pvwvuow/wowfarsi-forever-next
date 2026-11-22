@@ -1,0 +1,40 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+    tags: ["v*"]
+  pull_request:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install Lua
+        run: sudo apt-get update -qq && sudo apt-get install -y -qq lua5.4 zip
+
+      - name: Syntax check all Lua files
+        run: |
+          fail=0
+          while IFS= read -r f; do
+            luac5.4 -p "$f" || fail=1
+          done < <(find WoWFN -name '*.lua')
+          exit $fail
+
+      - name: Run Text engine tests
+        run: lua5.4 tests/text_test.lua
+
+      - name: Build addon zip
+        if: github.event_name == 'push'
+        run: |
+          VERSION="${GITHUB_REF_NAME#v}"
+          bash scripts/release.sh "$VERSION"
+
+      - name: Upload artifact
+        if: github.event_name == 'push'
+        uses: actions/upload-artifact@v4
+        with:
+          name: WoWFN-${{ github.ref_name }}
+          path: dist/*.zip
